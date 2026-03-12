@@ -5,3 +5,6 @@ yfinance
 scipy
 pandas
 numpy
+anyio
+# Optional: enable /api/ai-insight (requires ANTHROPIC_API_KEY)
+anthropic
