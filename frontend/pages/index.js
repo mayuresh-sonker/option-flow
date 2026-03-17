@@ -16,8 +16,11 @@ export default function Home() {
 
   const fetchExpiriesAndQuote = async (ticker) => {
     try {
+      // Reset state for a fresh lookup
       setError("");
-      setLoading(true);
+      setExpiries([]);
+      setSelectedExpiry("");
+      setChainData({ calls: [], puts: [] });
 
       const [expiriesRes, quoteRes] = await Promise.all([
         axios.get(`${backendBaseUrl}/api/expiries/${ticker}`),
@@ -25,11 +28,23 @@ export default function Home() {
       ]);
 
       const expiryList = expiriesRes.data?.expiries ?? [];
+      const firstExpiry = expiryList[0] || "";
+
       setExpiries(expiryList);
-      setSelectedExpiry(expiryList[0] || "");
+      setSelectedExpiry(firstExpiry);
 
       const price = quoteRes.data?.currentPrice ?? null;
       setCurrentPrice(price);
+
+      // Only mark the ticker as active once we have data
+      setActiveTicker(ticker);
+
+      // Immediately load the initial chain so the user sees results
+      if (firstExpiry) {
+        await fetchChain(ticker, firstExpiry);
+      } else {
+        setChainData({ calls: [], puts: [] });
+      }
     } catch (err) {
       console.error(err);
       setError("Unable to fetch expiries/quote. Please check the ticker.");
@@ -37,8 +52,6 @@ export default function Home() {
       setSelectedExpiry("");
       setCurrentPrice(null);
       setChainData({ calls: [], puts: [] });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -47,7 +60,6 @@ export default function Home() {
 
     try {
       setError("");
-      setLoading(true);
       const res = await axios.get(
         `${backendBaseUrl}/api/chain/${ticker}/${expiry}`
       );
@@ -59,25 +71,32 @@ export default function Home() {
       console.error(err);
       setError("Unable to fetch options chain for this ticker / expiry.");
       setChainData({ calls: [], puts: [] });
-    } finally {
-      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setError("Unable to fetch options chain for this ticker / expiry.");
+      setChainData({ calls: [], puts: [] });
+      throw err;
     }
   };
 
-  // When selectedExpiry or activeTicker change, refetch the chain
+  // When the expiry changes for the current active ticker, refetch the chain
   useEffect(() => {
     if (activeTicker && selectedExpiry) {
       fetchChain(activeTicker, selectedExpiry);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTicker, selectedExpiry]);
+  }, [selectedExpiry]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const t = tickerInput.trim().toUpperCase();
     if (!t) return;
-    setActiveTicker(t);
-    await fetchExpiriesAndQuote(t);
+    try {
+      setLoading(true);
+      await fetchExpiriesAndQuote(t);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
