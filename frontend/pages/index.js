@@ -12,7 +12,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const backendBaseUrl = "http://localhost:8000";
+  const backendBaseUrl =
+    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
   const fetchExpiriesAndQuote = async (ticker) => {
     try {
