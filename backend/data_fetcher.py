@@ -50,22 +50,67 @@ def get_stock_info(ticker_symbol: str) -> Optional[Dict[str, Any]]:
         if not _valid_ticker(ticker):
             return None
 
-        info = ticker.info or {}
-        price = info.get("regularMarketPrice") or info.get("currentPrice")
+        # Avoid relying on `.info` (often disabled/broken). Prefer fast_info and history.
+        price: Any = None
+        previous_close: Any = None
+        open_px: Any = None
+        day_high: Any = None
+        day_low: Any = None
+        currency: Any = None
+        exchange: Any = None
+        quote_type: Any = None
+
+        try:
+            fast_info = getattr(ticker, "fast_info", None) or {}
+            getter = fast_info.get if isinstance(fast_info, dict) else lambda k: getattr(fast_info, k, None)
+
+            price = getter("last_price")
+            previous_close = getter("previous_close")
+            open_px = getter("open")
+            day_high = getter("day_high")
+            day_low = getter("day_low")
+            currency = getter("currency")
+            exchange = getter("exchange")
+            quote_type = getter("quote_type")
+        except Exception:
+            pass
+
+        if price is None:
+            try:
+                hist = ticker.history(period="5d")
+                if not hist.empty:
+                    price = float(hist["Close"].dropna().iloc[-1])
+            except Exception:
+                price = None
+
+        if price is None:
+            return None
+
+        # Name/market cap are best-effort; try `.info` but don't fail if it breaks.
+        short_name = None
+        long_name = None
+        market_cap = None
+        try:
+            info = ticker.info or {}
+            short_name = info.get("shortName")
+            long_name = info.get("longName")
+            market_cap = info.get("marketCap")
+        except Exception:
+            pass
 
         return {
             "symbol": ticker_symbol.upper(),
-            "shortName": info.get("shortName"),
-            "longName": info.get("longName"),
-            "currency": info.get("currency"),
-            "exchange": info.get("exchange"),
-            "quoteType": info.get("quoteType"),
+            "shortName": short_name,
+            "longName": long_name,
+            "currency": currency,
+            "exchange": exchange,
+            "quoteType": quote_type,
             "currentPrice": price,
-            "previousClose": info.get("previousClose"),
-            "open": info.get("open"),
-            "dayHigh": info.get("dayHigh"),
-            "dayLow": info.get("dayLow"),
-            "marketCap": info.get("marketCap"),
+            "previousClose": previous_close,
+            "open": open_px,
+            "dayHigh": day_high,
+            "dayLow": day_low,
+            "marketCap": market_cap,
         }
     except Exception:
         return None
