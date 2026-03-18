@@ -108,6 +108,7 @@ export default function Home() {
         await fetchChain(ticker, firstExpiry);
       } else {
         setChainData({ calls: [], puts: [] });
+        setError("No listed options expiries found for this ticker.");
       }
     } catch (err) {
       console.error(err);

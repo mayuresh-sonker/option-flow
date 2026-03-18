@@ -46,9 +46,13 @@ const GreeksDashboard = ({
 
     calls.forEach((c) => {
       if (typeof c.strike === "number") {
+        const rawIv =
+          typeof c.impliedVolatility === "number" ? c.impliedVolatility : null;
+        const iv =
+          rawIv != null && Number.isFinite(rawIv) && rawIv > 1e-6 ? rawIv : null;
         map.set(c.strike, {
           strike: c.strike,
-          iv: typeof c.impliedVolatility === "number" ? c.impliedVolatility : null,
+          iv,
         });
       }
     });
@@ -56,8 +60,10 @@ const GreeksDashboard = ({
     puts.forEach((p) => {
       if (typeof p.strike !== "number") return;
       const existing = map.get(p.strike);
-      const iv =
+      const rawIv =
         typeof p.impliedVolatility === "number" ? p.impliedVolatility : null;
+      const iv =
+        rawIv != null && Number.isFinite(rawIv) && rawIv > 1e-6 ? rawIv : null;
       if (!existing) {
         map.set(p.strike, { strike: p.strike, iv });
       } else if (existing.iv == null && iv != null) {
@@ -66,7 +72,8 @@ const GreeksDashboard = ({
     });
 
     const result = Array.from(map.values()).filter(
-      (row) => typeof row.iv === "number" && !Number.isNaN(row.iv)
+      (row) =>
+        typeof row.iv === "number" && Number.isFinite(row.iv) && row.iv > 1e-6
     );
 
     result.sort((a, b) => a.strike - b.strike);
