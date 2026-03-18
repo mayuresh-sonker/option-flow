@@ -7,10 +7,10 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from .black_scholes import black_scholes
-from .backtester import backtest_strategy
-from .data_fetcher import get_option_expiries, get_options_chain, get_stock_info
-from .strategy_engine import analyze_strategy
+from black_scholes import black_scholes
+from backtester import backtest_strategy
+from data_fetcher import get_option_expiries, get_options_chain, get_stock_info
+from strategy_engine import analyze_strategy
 
 
 # Load environment variables (e.g., API keys, config) from .env
