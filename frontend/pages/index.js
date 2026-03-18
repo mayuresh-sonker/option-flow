@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import OptionsChain from "../components/OptionsChain";
+import IVSmile from "../components/IVSmile";
+import GreeksDashboard from "../components/GreeksDashboard";
+import StrategyBuilder from "../components/StrategyBuilder";
+import Backtester from "../components/Backtester";
+import AIInsight from "../components/AIInsight";
+import { getBackendBaseUrl } from "../lib/backend";
 
 export default function Home() {
   const [tickerInput, setTickerInput] = useState("");
@@ -12,10 +18,65 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const backendBaseUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:8000";
+  const backendBaseUrl = getBackendBaseUrl();
+
+  const expiryYears = (() => {
+    if (!selectedExpiry) return null;
+    const exp = new Date(`${selectedExpiry}T16:00:00Z`);
+    const now = new Date();
+    const ms = exp.getTime() - now.getTime();
+    const years = ms / (365 * 24 * 60 * 60 * 1000);
+    return Number.isFinite(years) && years > 0 ? years : null;
+  })();
+
+  const chainSummary = (() => {
+    const calls = chainData?.calls ?? [];
+    const puts = chainData?.puts ?? [];
+    if (!calls.length && !puts.length) return null;
+
+    const callOI = calls.reduce(
+      (acc, r) => acc + (typeof r.openInterest === "number" ? r.openInterest : 0),
+      0
+    );
+    const putOI = puts.reduce(
+      (acc, r) => acc + (typeof r.openInterest === "number" ? r.openInterest : 0),
+      0
+    );
+
+    const putCallRatio = callOI > 0 ? putOI / callOI : null;
+
+    // ATM IV approximation: average call/put IV at nearest strike
+    let atmIv = null;
+    if (typeof currentPrice === "number") {
+      const all = [...calls, ...puts].filter(
+        (r) => typeof r.strike === "number" && typeof r.impliedVolatility === "number"
+      );
+      if (all.length) {
+        let best = all[0];
+        let bestDiff = Math.abs(best.strike - currentPrice);
+        for (let i = 1; i < all.length; i += 1) {
+          const d = Math.abs(all[i].strike - currentPrice);
+          if (d < bestDiff) {
+            bestDiff = d;
+            best = all[i];
+          }
+        }
+        const sameStrike = all.filter((r) => r.strike === best.strike);
+        const avg =
+          sameStrike.reduce((acc, r) => acc + r.impliedVolatility, 0) /
+          (sameStrike.length || 1);
+        atmIv = Number.isFinite(avg) ? avg : null;
+      }
+    }
+
+    return {
+      iv_rank: null,
+      put_call_ratio: putCallRatio,
+      atm_iv: atmIv,
+      hv30: null,
+      days_to_earnings: null,
+    };
+  })();
 
   const fetchExpiriesAndQuote = async (ticker) => {
     try {
@@ -220,6 +281,42 @@ export default function Home() {
             chainData={chainData}
             currentPrice={currentPrice}
           />
+        </section>
+
+        {/* Strategy builder + P&L */}
+        <section>
+          <StrategyBuilder
+            ticker={activeTicker}
+            chainData={chainData}
+            currentPrice={currentPrice}
+            expiry={selectedExpiry}
+          />
+        </section>
+
+        {/* IV Smile */}
+        <section>
+          <IVSmile chainData={chainData} currentPrice={currentPrice} />
+        </section>
+
+        {/* Greeks dashboard */}
+        <section>
+          <GreeksDashboard
+            ticker={activeTicker}
+            expiryYears={expiryYears}
+            currentPrice={currentPrice}
+            optionType="call"
+            chainData={chainData}
+          />
+        </section>
+
+        {/* Backtester */}
+        <section>
+          <Backtester />
+        </section>
+
+        {/* AI Insight */}
+        <section>
+          <AIInsight ticker={activeTicker} chainSummary={chainSummary} />
         </section>
       </main>
     </div>

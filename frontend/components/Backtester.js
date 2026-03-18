@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from "react";
 import axios from "axios";
+import { getBackendBaseUrl } from "../lib/backend";
 import {
   CartesianGrid,
   Line,
@@ -32,7 +33,7 @@ const Backtester = () => {
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
 
-  const backendBaseUrl = "http://localhost:8000";
+  const backendBaseUrl = getBackendBaseUrl();
 
   const equityChartData = useMemo(() => {
     const trades = result?.results?.trades ?? [];

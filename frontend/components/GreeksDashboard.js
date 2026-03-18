@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { getBackendBaseUrl } from "../lib/backend";
 import {
   Bar,
   BarChart,
@@ -35,7 +36,7 @@ const GreeksDashboard = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const backendBaseUrl = "http://localhost:8000";
+  const backendBaseUrl = getBackendBaseUrl();
 
   const { calls = [], puts = [] } = chainData || {};
 

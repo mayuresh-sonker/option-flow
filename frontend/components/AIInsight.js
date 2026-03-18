@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
+import { getBackendBaseUrl } from "../lib/backend";
 
 const POSITIVE_WORDS = new Set([
   "bullish",
@@ -139,7 +140,7 @@ const AIInsight = ({ ticker, chainSummary }) => {
   const [insight, setInsight] = useState("");
   const [lastUpdatedAt, setLastUpdatedAt] = useState(null);
 
-  const backendBaseUrl = "http://localhost:8000";
+  const backendBaseUrl = getBackendBaseUrl();
 
   const canFetch = useMemo(() => !!ticker && !!chainSummary, [ticker, chainSummary]);
 
