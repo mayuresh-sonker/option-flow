@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
-from black_scholes import black_scholes
+from .black_scholes import black_scholes
 
 
 StrategyType = Literal[
