@@ -13,7 +13,9 @@ export default function Home() {
   const [error, setError] = useState("");
 
   const backendBaseUrl =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:8000";
 
   const fetchExpiriesAndQuote = async (ticker) => {
     try {
