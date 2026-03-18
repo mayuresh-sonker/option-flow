@@ -10,19 +10,33 @@ load_dotenv()
 def _valid_ticker(ticker: yf.Ticker) -> bool:
     """
     Heuristic to determine whether a ticker exists.
+
+    Newer versions of yfinance deprecate/disable ``.info`` for many symbols,
+    so we avoid relying on it and instead:
+    - Prefer ``fast_info.last_price`` when available
+    - Fall back to a tiny price history check
     """
+    # Try fast_info first – cheap and generally available
     try:
-        info = ticker.info or {}
+        fast_info = getattr(ticker, "fast_info", None) or {}
+        last_price = getattr(fast_info, "last_price", None) or fast_info.get(
+            "last_price"
+        )
+        if last_price is not None:
+            return True
     except Exception:
-        return False
+        # Fall back to history-based check below
+        pass
 
-    # yfinance returns an empty dict for clearly invalid tickers
-    # and often includes regularMarketPrice for valid ones.
-    if not info:
-        return False
+    # As a fallback, attempt to fetch a minimal history window.
+    try:
+        hist = ticker.history(period="5d")
+        if not hist.empty:
+            return True
+    except Exception:
+        pass
 
-    price_keys = ("regularMarketPrice", "currentPrice")
-    return any(k in info and info[k] is not None for k in price_keys)
+    return False
 
 
 def get_stock_info(ticker_symbol: str) -> Optional[Dict[str, Any]]:

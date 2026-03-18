@@ -71,11 +71,6 @@ export default function Home() {
       console.error(err);
       setError("Unable to fetch options chain for this ticker / expiry.");
       setChainData({ calls: [], puts: [] });
-    } catch (err) {
-      console.error(err);
-      setError("Unable to fetch options chain for this ticker / expiry.");
-      setChainData({ calls: [], puts: [] });
-      throw err;
     }
   };
 
